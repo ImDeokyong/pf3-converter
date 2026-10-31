@@ -28,6 +28,14 @@ class LogCurveTests(unittest.TestCase):
         # Fujifilm F-Log2: 18 % reflectance encodes to about 0.391 (normalized code value).
         self.assertAlmostEqual(float(log_encode(0.18, 'flog2')), 0.391, places=3)
         self.assertAlmostEqual(float(log_encode(0.18, 'flog')), 0.459, places=2)
+        # Panasonic V-Log: 18 % grey encodes to IRE 42 (0.423 full range).
+        self.assertAlmostEqual(float(log_encode(0.18, 'vlog')), 0.4233, places=3)
+
+    def test_vgamut_matrix_keeps_white_and_matches_published_inverse(self):
+        from log_adapt import BT709_TO_VGAMUT
+        np.testing.assert_allclose(BT709_TO_VGAMUT.sum(axis=1), 1.0, atol=1e-6)
+        # Inverse of the published V-Gamut -> BT.709 matrix (first row 1.806576, -0.695697, -0.110879).
+        np.testing.assert_allclose(np.linalg.inv(BT709_TO_VGAMUT)[0], [1.806576, -0.695697, -0.110879], atol=2e-4)
 
     def test_scene_keeps_grey_and_expands_white(self):
         grey_srgb = float(srgb_encode(0.18))

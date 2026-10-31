@@ -30,6 +30,8 @@ from lut import Cube, apply_cube
 LOG_CURVES = {
     'flog': dict(cut1=0.00089, a=0.555556, b=0.009468, c=0.344676, d=0.790453, e=8.735631, f=0.092864),
     'flog2': dict(cut1=0.000889, a=5.555556, b=0.064829, c=0.245281, d=0.384316, e=8.799461, f=0.092864),
+    # Panasonic V-Log (V-Log/V-Gamut reference manual): x<0.01 -> 5.6x+0.125, else c*log10(x+b)+d.
+    'vlog': dict(cut1=0.01, a=1.0, b=0.00873, c=0.241514, d=0.598206, e=5.6, f=0.125),
 }
 # F-Gamut uses the ITU-R BT.2020 primaries (D65). Linear BT.709/sRGB -> BT.2020.
 BT709_TO_FGAMUT = np.array([
@@ -37,6 +39,18 @@ BT709_TO_FGAMUT = np.array([
     [0.0690970, 0.9195400, 0.0113612],
     [0.0163916, 0.0880132, 0.8955950],
 ], dtype=np.float64)
+def _rgb_to_xyz(primaries, white=(0.3127, 0.3290)):
+    xy = np.array(list(primaries) + [white], dtype=np.float64)
+    xyz = np.column_stack([xy[:, 0] / xy[:, 1], np.ones(4), (1 - xy[:, 0] - xy[:, 1]) / xy[:, 1]])
+    scale = np.linalg.solve(xyz[:3].T, xyz[3])
+    return xyz[:3].T * scale
+
+
+# V-Gamut primaries (Panasonic), D65. Linear BT.709/sRGB -> V-Gamut.
+BT709_TO_VGAMUT = np.linalg.solve(
+    _rgb_to_xyz(((0.730, 0.280), (0.165, 0.840), (0.100, -0.030))),
+    _rgb_to_xyz(((0.640, 0.330), (0.300, 0.600), (0.150, 0.060))))
+GAMUTS = {'flog': BT709_TO_FGAMUT, 'flog2': BT709_TO_FGAMUT, 'vlog': BT709_TO_VGAMUT}
 GREY = 0.18
 GREY_TO_WHITE = float(np.log2(1 / GREY))  # stops from 18 % grey to photo white
 WHITE_TARGET = 0.98
@@ -93,7 +107,7 @@ def photo_to_scene(rgb, highlight_stops: float = DEFAULT_HIGHLIGHT_STOPS, exposu
 def build_input_transform(rgb, curve='flog2', highlight_stops=DEFAULT_HIGHLIGHT_STOPS, exposure=0.0,
                           shadow_compress=DEFAULT_SHADOW_COMPRESS):
     scene = photo_to_scene(rgb, highlight_stops, exposure, shadow_compress)
-    return log_encode(scene @ BT709_TO_FGAMUT.T, curve)
+    return log_encode(scene @ GAMUTS[curve].T, curve)
 
 
 def _render(log_lut: Cube, rgb, curve, highlight_stops, exposure, output, shadow_compress=DEFAULT_SHADOW_COMPRESS):

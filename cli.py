@@ -26,7 +26,7 @@ def main(argv=None):
     parser.add_argument('--xmp-group', default=XMP_GROUP, help='Adobe XMP creative profile group')
     parser.add_argument('--probe', action='store_true', help='Locate Canon engine')
     parser.add_argument('--log-input', choices=tuple(LOG_CURVES),
-        help='Input CUBE expects Fujifilm F-Log/F-Log2 (F-Gamut); adapt it to ordinary photos first')
+        help='Input CUBE expects Fujifilm F-Log/F-Log2 (F-Gamut) or Panasonic V-Log (V-Gamut); adapt it to ordinary photos first')
     parser.add_argument('--exposure', type=float, default=0., help='With --log-input: exposure offset in stops')
     parser.add_argument('--highlight-stops', default='2',
         help='With --log-input: extra stops above grey for photo highlights (default 2, or "auto" to make photo white render white)')
