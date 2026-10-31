@@ -35,22 +35,28 @@ class LogCurveTests(unittest.TestCase):
         np.testing.assert_allclose(scene[0], 0.18, rtol=1e-6)
         np.testing.assert_allclose(scene[1], 0.18 * 2 ** (np.log2(1 / 0.18) + 2), rtol=1e-6)
 
-    def test_scene_is_monotonic_and_preserves_ratios(self):
+    def test_scene_is_monotonic_and_per_channel(self):
         ramp = np.linspace(0, 1, 101)[:, None].repeat(3, 1)
         scene = photo_to_scene(ramp, 3.0)[:, 0]
         self.assertTrue(np.all(np.diff(scene) >= 0))
         colour = photo_to_scene(np.array([[0.8, 0.4, 0.2]]), 2.0)[0]
-        self.assertAlmostEqual(colour[1] / colour[0], ((0.4 + .055) / 1.055) ** 2.4 / ((0.8 + .055) / 1.055) ** 2.4, places=6)
+        for channel, value in enumerate((0.8, 0.4, 0.2)):
+            self.assertAlmostEqual(colour[channel], photo_to_scene(np.array([[value] * 3]), 2.0)[0, 0], places=9)
 
 
 class AdaptTests(unittest.TestCase):
     def test_auto_highlight_makes_white_white_and_grey_reasonable(self):
         log_lut = synthetic_flog2_lut()
-        result = adapt_log_lut(log_lut, 'flog2')
+        result = adapt_log_lut(log_lut, 'flog2', 'auto')
         self.assertGreater(result.highlight_stops, 0)
         self.assertGreaterEqual(result.white_out, 0.975)
         self.assertTrue(0.3 < result.grey_out < 0.75, result.grey_out)
         self.assertEqual(result.cube.size, 33)
+
+    def test_default_keeps_one_stop_highlight_expansion(self):
+        result = adapt_log_lut(synthetic_flog2_lut(9), 'flog2')
+        self.assertEqual(result.highlight_stops, 1.0)
+        self.assertLess(result.white_out, adapt_log_lut(synthetic_flog2_lut(9), 'flog2', 'auto').white_out + 1e-6)
 
     def test_plain_application_overdoes_contrast_compared_with_adapted(self):
         log_lut = synthetic_flog2_lut()

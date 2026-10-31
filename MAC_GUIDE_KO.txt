@@ -32,7 +32,8 @@ V1에 넣기
   .venv/bin/python cli.py ClassicChrome.cube --log-input flog2 -o ClassicChrome.pf3 --base Neutral
 - 옵션
   --exposure 0.3         전체 밝기 보정(스톱, -3~+3)
-  --highlight-stops 2    하이라이트 늘이는 폭. 비우면 사진의 흰색이 LUT에서 흰색이 되도록 자동 계산
+  --highlight-stops 1    하이라이트 늘이는 폭(기본 1). auto면 사진의 흰색이 LUT에서도 흰색이 되게 계산하지만,
+                         ETERNA처럼 하이라이트가 부드러운 룩은 색이 들뜨니 기본값을 권장
   --log-output srgb      LUT 출력(감마 2.4)을 sRGB로 다시 맞춤. 어둡게 보이면 기본값(rec709) 유지
 - _photo.cube를 앱에서 열면 샘플 사진에 입혀 미리볼 수 있습니다.
 - 후지 LUT 파일은 후지 이용약관 대상이라 이 저장소에 넣지 않습니다.

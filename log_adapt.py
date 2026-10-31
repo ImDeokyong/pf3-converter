@@ -8,9 +8,12 @@ new 33^3 CUBE whose input is display sRGB:
 
 The photo has already been tone-mapped by its camera, so scene linear can
 only be approximated. Mid grey (18 %) is kept at 0.18 and highlights above it
-are stretched in log2 space so that photo white reaches the scene level the
-Log LUT renders as white ("highlight stops"). This is an approximation and
-must be checked with test photos. MIT licensed.
+in each channel are stretched in log2 space ("highlight stops"). The default of
+1 stop puts photo white about 3.5 stops above grey, close to where camera JPEGs
+clip, so soft-shouldered looks such as ETERNA keep their soft highlights.
+"auto" instead stretches until photo white renders as white in the Log LUT,
+which brightens and washes out saturated colours with the official Fujifilm
+LUTs. This is an approximation and must be checked with test photos. MIT licensed.
 """
 from __future__ import annotations
 
@@ -33,6 +36,7 @@ BT709_TO_FGAMUT = np.array([
 GREY = 0.18
 GREY_TO_WHITE = float(np.log2(1 / GREY))  # stops from 18 % grey to photo white
 WHITE_TARGET = 0.98
+DEFAULT_HIGHLIGHT_STOPS = 1.0
 
 
 @dataclass(frozen=True)
@@ -63,16 +67,19 @@ def log_encode(x, curve: str = 'flog2'):
 
 
 def photo_to_scene(rgb, highlight_stops: float = 2.0, exposure: float = 0.0):
-    """Display sRGB -> approximate scene-linear BT.709 reflectance."""
+    """Display sRGB -> approximate scene-linear BT.709 reflectance.
+
+    Each channel is expanded on its own, mirroring the per-channel tone curve a
+    camera applies. (Scaling all channels by the brightest one lifted the other
+    channels and washed out saturated colours with the official Fujifilm LUTs.)
+    """
     linear = srgb_decode(rgb)
-    peak = linear.max(axis=-1, keepdims=True)
-    safe = np.maximum(peak, 1e-9)
+    safe = np.maximum(linear, 1e-9)
     s = np.log2(safe / GREY)
     # Smooth expansion above grey: slope 1 at grey, photo white -> +GREY_TO_WHITE+highlight_stops.
     above = np.clip(s, 0, None)
     stretched = s + highlight_stops * (above / GREY_TO_WHITE) ** 2
-    scale = np.where(peak > 1e-9, GREY * 2 ** stretched / safe, 1.0)
-    return linear * scale * 2 ** exposure
+    return np.where(linear > 1e-9, GREY * 2 ** stretched, linear) * 2 ** exposure
 
 
 def build_input_transform(rgb, curve='flog2', highlight_stops=2.0, exposure=0.0):
@@ -108,7 +115,7 @@ def auto_highlight_stops(log_lut: Cube, curve='flog2', exposure=0.0, output='rec
     return round(high, 3)
 
 
-def adapt_log_lut(log_lut: Cube, curve: str = 'flog2', highlight_stops: float | None = None,
+def adapt_log_lut(log_lut: Cube, curve: str = 'flog2', highlight_stops: float | str = DEFAULT_HIGHLIGHT_STOPS,
                   exposure: float = 0.0, output: str = 'rec709', size: int = 33) -> AdaptResult:
     """Return a photo (display sRGB input) CUBE built from a Log-input LUT."""
     if curve not in LOG_CURVES:
@@ -117,7 +124,7 @@ def adapt_log_lut(log_lut: Cube, curve: str = 'flog2', highlight_stops: float | 
         raise ValueError('output must be rec709 or srgb')
     if not -3 <= exposure <= 3:
         raise ValueError('exposure must be between -3 and +3 stops')
-    if highlight_stops is None:
+    if highlight_stops == 'auto':
         highlight_stops = auto_highlight_stops(log_lut, curve, exposure, output)
     if not 0 <= highlight_stops <= 6:
         raise ValueError('highlight stops must be between 0 and 6')

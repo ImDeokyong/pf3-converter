@@ -34,8 +34,10 @@ python cli.py ClassicChrome.cube --log-input flog2 -o ClassicChrome.pf3
 python cli.py ClassicChrome.cube --log-input flog2 -o ClassicChrome_photo.cube --exposure 0.3
 ```
 
-Mid grey stays at 18 %. Highlights above grey are stretched so that photo white
-renders at 0.98 in the Log LUT (automatic, or `--highlight-stops`). A finished
+Mid grey stays at 18 %. Highlights above grey are stretched per channel by
+`--highlight-stops` (default 1, i.e. photo white ≈ 3.5 stops above grey, near
+where camera JPEGs clip). `auto` stretches until photo white renders white, which
+washes out saturated colours with soft-shouldered looks such as ETERNA. A finished
 photo cannot be fully inverted to scene linear, so this is an approximation.
 Fujifilm LUT files are not included; download them from Fujifilm.
 
