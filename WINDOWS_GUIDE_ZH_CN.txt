@@ -1,0 +1,67 @@
+PF3 Converter v1.1 — Windows 快速使用指南
+制作者：ImDeokyong
+
+界面支持：한국어 | English | 日本語 | 简体中文
+使用窗口右上角的「语言」下拉框进行切换。
+语言切换立即生效，重启后仍保留上次选择。
+
+安装与使用
+1. 在 Windows 上安装 64 位 Python 3.10+ 和 Canon Picture Style Editor（PSE）。
+   如果只需要 CUBE → XMP，则无需安装 PSE。
+2. 将 ZIP 完整解压，并运行 launch_windows.bat。
+3. 点击「1. 打开 .cube / .xmp」导入 LUT 或 Lightroom/Camera Raw XMP 文件。
+4. 点击「照片 / RAW 预览」打开照片，检查颜色效果。
+5. CUBE/XMP → PF3：选择基础样式、转换强度，然后点击「3. 生成 .pf3 文件」。
+   此功能需要 Canon PSE 的 Windows DLL。
+6. CUBE → Lightroom XMP：点击「4. .cube → 生成 Lightroom .xmp」。
+7. 在 Canon DPP（.pf3）或 Lightroom/Camera Raw（.xmp）中确认结果。
+
+注意事项
+- PF3 转换是近似结果，颜色可能与源 LUT 不完全一致。
+- XMP 调整预设仅近似处理受支持的调整项；未支持的设置会在警告中列出。
+- CUBE → XMP 生成包含 3D LUT 的创意配置文件，而非可编辑的调整滑块。
+- 尚未验证在真实相机上的兼容性，以及 XMP 能否在 Lightroom 中成功导入。
+- ZIP 包含 MIT 开源代码和构建脚本，不包含预编译 EXE、
+  Canon DLL、Adobe 文件或 PSE 安装程序。
+
+构建 Windows EXE
+运行 build_windows.bat，输出文件为 dist\PF3Converter.exe。
+EXE 的产品信息为 PF3 Converter，版本 1.1，制作者 ImDeokyong。
+
+命令行示例：
+python cli.py look.cube -o look.pf3
+python cli.py preset.xmp -o result.pf3
+python cli.py look.cube -o LightroomLook.xmp --name "My Profile"
+
+基于 RAW 照片的自动强度推荐（新功能）
+- 打开 .cube 或 .xmp，然后点击［使用 1–5 张 RAW 推荐强度］。
+- 选择 1–5 张相机 RAW 照片，建议涵盖不同光线和主体。
+- 后台分析找出在所有参考照片上均满足保守明暗、色彩和高光/阴影裁切阈值的最高强度。
+- 推荐值会自动应用于强度滑块和 PF3 导出。要预览单张照片，请另外打开 RAW。
+- 初始 50% 仅为临时值。推荐值不代表审美最优，也不能保证与 Canon DPP 完全一致。
+- 输入 LUT 假定为显示 sRGB。Log/色域技术 LUT 须先进行正确的色彩空间转换。
+- RAW 分析需要 rawpy。本功能不会解决 Python 3.15 上因缺少 rawpy wheel 而产生的安装问题。
+
+CUBE LUT 类型自动分析（新增功能）
+- 打开 .cube 时分析内部 RGB 查找表，不依赖文件名、TITLE 或注释。
+- 显示 Creative / 推测为 Technical / 推测为 Hybrid / 无法确定及置信度。
+- Creative LUT 可继续使用原有的 1–5 张 RAW 自动强度推荐功能。
+- 推测为 Technical/Hybrid 时不提供 RAW 自动强度；不会阻止 PF3/XMP 导出，也不会弹出警告窗口。
+- 如判断有误，可手动指定 Creative；无法确定的 LUT 仍可选择使用 RAW 推荐。
+- 不会自动执行 Log/色域转换，仅凭 RGB 表无法确定真实输入色彩空间。
+
+
+PF3 Converter v1.1 — LUMIX CUBE 导出
+-------------------------------------
+1. 打开 CUBE 或 XMP 文件。
+2. 可使用 1–5 张 RAW 照片自动推荐强度，或手动设置。
+3. 选择 LUMIX 基础照片风格（默认 STD），必须匹配相机实际色彩处理。
+4. 点击 [5. 导出 LUMIX CUBE (sRGB)]。
+5. 通过兼容机型的 LUT 库导入，并拍摄 JPEG 进行实机验证。
+普通 XMP → CUBE：选择 [保存标准 CUBE（含 XMP）]，两种 CUBE 输出采用相同的强度设置。
+注意：Adobe 调整预设只进行近似转换，AI 蒙版、相机配置文件和 RAW 显影无法完整再现。
+照片风格标签不能自动转换输入色彩空间；Log LUT 需先进行正确的色彩空间处理。
+
+
+
+[v1.1 sRGB] 标准 CUBE 用于 Photoshop 的 sRGB 文档，LUMIX CUBE 用于兼容的相机。同一强度下，两者的 33³ RGB 数据相同，LUMIX 版本仅增加照片风格标签。Lightroom 调整预设的色彩转换仍为近似值。

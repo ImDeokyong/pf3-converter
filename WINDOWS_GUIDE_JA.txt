@@ -1,0 +1,68 @@
+PF3 Converter v1.1 — Windows クイックガイド
+制作者：ImDeokyong
+
+対応言語：한국어 | English | 日本語 | 简体中文
+画面右上の「言語」ドロップダウンから切り替えます。
+再起動せずに言語が変わり、次回起動時も選択した言語が維持されます。
+
+セットアップと操作
+1. Windowsに64ビット版Python 3.10以降とCanon Picture Style Editor（PSE）を
+   インストールします。CUBE → XMPのみの場合、PSEは不要です。
+2. ZIPをすべて展開し、launch_windows.batを実行します。
+3. 「1. .cube / .xmp を開く」でLUTまたはLightroom/Camera RawのXMPを読み込みます。
+4. 「写真 / RAW プレビュー」で画像を開き、色の変化を確認します。
+5. CUBE/XMP → PF3：基本スタイルと変換の強度を設定し、
+   「3. .pf3 ファイルを生成」を選択します。Canon PSEのWindows DLLが必要です。
+6. CUBE → Lightroom XMP：「4. .cube → Lightroom .xmp を生成」を選択します。
+7. 結果はCanon DPP（.pf3）またはLightroom/Camera Raw（.xmp）で確認します。
+
+注意事項
+- PF3への変換は近似であり、元のLUTと色が一致するとは限りません。
+- XMP現像プリセットは対応する補正項目のみ近似します。除外項目は警告に表示されます。
+- CUBE → XMPは3D LUTを含むクリエイティブプロファイルを生成します。
+  編集可能な現像スライダーへの変換ではありません。
+- 実機カメラとの互換性、LightroomへのXMP取り込みは未検証です。
+- ZIPにはMITライセンスのソースとビルドスクリプトが含まれます。
+  コンパイル済みEXE、Canon DLL、Adobeファイル、PSE本体は含まれません。
+
+Windows EXEのビルド
+build_windows.batを実行するとdist\PF3Converter.exeが生成されます。
+EXEの製品情報はPF3 Converter・バージョン1.1・ImDeokyongです。
+
+CLI例：
+python cli.py look.cube -o look.pf3
+python cli.py preset.xmp -o result.pf3
+python cli.py look.cube -o LightroomLook.xmp --name "My Profile"
+
+RAW画像に基づく自動強度推奨（新機能）
+- .cubeまたは.xmpを開き、［RAW 1～5枚で強度を推奨］をクリックします。
+- 実際のカメラRAWを1～5枚選びます。異なる照明や被写体を含めることを推奨します。
+- バックグラウンド解析で、明暗・色の変化や新たな白飛び・黒つぶれを保守的に制限する最大強度を計算します。
+- 推奨値は強度スライダーとPF3出力に自動反映されます。写真プレビューは別途RAWを開いてください。
+- 初期50%は暫定値です。推奨値は美的な最適値でもCanon DPPでの再現保証でもありません。
+- 入力LUTは表示用sRGBを想定します。Log/色域変換LUTは先に適切な色空間へ変換してください。
+- RAW解析にはrawpyが必要です。Python 3.15でのrawpyインストール問題は本機能では解消しません。
+
+CUBE LUT種類の自動推定（新機能）
+- .cubeを開くと、ファイル名・TITLE・コメントではなくRGBテーブル自体を解析します。
+- Creative / Technical推定 / Hybrid推定 / 判定保留と信頼度を表示します。
+- Creative LUTは従来のRAW 1～5枚による強度推奨を利用できます。
+- Technical/Hybrid推定ではRAW自動強度を無効にします。PF3/XMPの書き出しは制限せず、警告ダイアログも表示しません。
+- 誤判定時には手動でCreativeを選択できます。判定保留の場合は任意でRAW推奨を使用できます。
+- Log/色域変換は行われず、テーブルだけで入力色空間を断定できません。
+
+
+PF3 Converter v1.1 — LUMIX用CUBE出力
+-------------------------------------
+1. CUBEまたはXMPファイルを読み込みます。
+2. 必要に応じてRAW 1～5枚から強度を推奨、または手動で強度を設定します。
+3. ベースのフォトスタイルを選択（初期値STD）。カメラ側の色処理と合わせてください。
+4. [5. LUMIX用CUBEを出力 (sRGB)]を押します。
+5. 対応LUMIXのLUTライブラリに読み込み、実機JPEGで確認してください。
+通常のXMP→CUBEは[標準CUBEを保存（XMPも可）]を使用します。どちらも同じ強度設定を使います。
+注意：Adobe現像プリセットは近似です。AIマスク・カメラプロファイル・RAW現像は再現されません。
+タグは色空間を自動変換しません。Log用LUTは別途正しい色空間処理が必要です。
+
+
+
+[v1.1 sRGB] 標準CUBEはPhotoshopのsRGBドキュメント用、LUMIX CUBEは対応カメラ用です。強度が同じ場合、33³ RGBテーブルは同一です。LUMIX版にはフォトスタイルタグが追加されます。Lightroom現像プリセットの色再現は近似です。

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/"
+   crs:PresetType="Normal" crs:ProcessVersion="11.0"
+   crs:Exposure2012="+0.15" crs:Contrast2012="+12" crs:Vibrance="+16"
+   crs:Saturation="-6" crs:HueAdjustmentOrange="-3" crs:ColorGradeShadowHue="220"
+   crs:ColorGradeShadowSat="14" crs:ColorGradeHighlightHue="45"
+   crs:ColorGradeHighlightSat="17" crs:HasSettings="True">
+   <crs:Name><rdf:Alt><rdf:li xml:lang="x-default">Warm Film Sample</rdf:li></rdf:Alt></crs:Name>
+   <crs:ToneCurvePV2012><rdf:Seq><rdf:li>0, 5</rdf:li><rdf:li>64, 55</rdf:li>
+    <rdf:li>128, 128</rdf:li><rdf:li>192, 201</rdf:li><rdf:li>255, 249</rdf:li></rdf:Seq></crs:ToneCurvePV2012>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>

@@ -1,0 +1,21 @@
+name: Build PF3 Converter v1.1 (Windows EXE)
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+jobs:
+  package:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - run: python -m pip install -r requirements.txt pyinstaller
+      - run: python -m unittest discover -s tests -v
+      - run: pyinstaller --clean --noconfirm --onefile --windowed --name PF3Converter --version-file version_info.txt --collect-all rawpy app.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PF3Converter-v1.1-Windows-x64
+          path: dist/PF3Converter.exe

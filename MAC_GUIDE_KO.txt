@@ -1,0 +1,26 @@
+PF3 Converter macOS 빠른 시작
+
+준비물
+1. Canon Picture Style Editor (macOS용) 설치
+   기본 위치: /Applications/Canon Utilities/Picture Style Editor/PictureStyleEditor.app
+2. Python 3.10 이상 (python.org 설치본 권장, Tk 포함)
+   https://www.python.org/downloads/macos/
+
+실행
+- Finder에서 launch_mac.command 더블클릭
+  (처음 한 번 "확인되지 않은 개발자" 경고가 나오면 우클릭 > 열기)
+- 처음 실행할 때 .venv 폴더를 만들고 numpy·Pillow·rawpy를 설치합니다.
+
+명령줄(CLI)
+  .venv/bin/python cli.py --probe                         # 캐논 엔진 위치 확인
+  .venv/bin/python cli.py look.cube -o look.pf3 --strength 0.5
+  .venv/bin/python cli.py preset.xmp -o preset.pf3 --base Standard
+
+미리보기
+- "LUT 참고 보기": 모든 사진(JPEG/RAW)에서 동작합니다. 순수 파이썬 계산이라 맥에서도 그대로 됩니다.
+- "캐논 실제 현상": PSE 안의 DppCore로 CR3/CR2 RAW에 pf3를 실제로 입혀 봅니다.
+  맥에서는 아직 실험 단계입니다. 실패하면 "LUT 참고 보기"를 쓰세요.
+
+V1에 넣기
+- 만든 .pf3는 EOS Utility의 "픽처 스타일 파일 등록"으로 사용자 정의 1~3에 넣습니다.
+- 변환은 근사치입니다. 테스트 컷을 찍어 확인한 뒤 강도(strength)를 조절하세요.

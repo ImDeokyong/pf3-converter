@@ -1,0 +1,69 @@
+PF3 Converter v1.1 — Windows Quick Start
+Created by: ImDeokyong
+
+Supported interface languages: 한국어 | English | 日本語 | 简体中文
+To change the interface language, select it from the Language drop-down at the top right.
+The choice is applied immediately and remembered the next time you launch the app.
+
+SETUP AND USE
+1. Install 64-bit Python 3.10+ and Canon Picture Style Editor (PSE) on Windows.
+   If you only need CUBE → XMP, PSE is not required.
+2. Extract the full ZIP and run launch_windows.bat.
+3. Select "1. Open .cube / .xmp" to open a LUT or Lightroom/Camera Raw XMP file.
+4. Select "Preview photo / RAW" to load a photo and check the color effect.
+5. For CUBE/XMP → PF3: choose a base style and effect strength, then select
+   "3. Generate .pf3 file". This requires the Canon PSE Windows DLL.
+6. For CUBE → Lightroom XMP: select "4. .cube → Lightroom .xmp".
+7. Verify the result in Canon DPP (.pf3) or Lightroom/Camera Raw (.xmp).
+
+IMPORTANT
+- PF3 conversion is an approximation; colors may differ from the source LUT.
+- XMP develop presets are approximated only for supported adjustments.
+  Unsupported settings are reported in a warning dialog.
+- CUBE → XMP creates a creative profile containing a 3D LUT, not editable sliders.
+- Camera compatibility and importing XMP into Lightroom are not independently verified.
+- The package includes MIT-licensed source and scripts, not a prebuilt EXE,
+  Canon DLLs, Adobe files, or a Canon PSE installer.
+
+BUILD A WINDOWS EXECUTABLE
+Run build_windows.bat; the output is dist\PF3Converter.exe.
+The EXE metadata retains PF3 Converter, version 1.1, and ImDeokyong.
+
+CLI examples:
+python cli.py look.cube -o look.pf3
+python cli.py preset.xmp -o result.pf3
+python cli.py look.cube -o LightroomLook.xmp --name "My Profile"
+
+RAW-referenced auto strength (new)
+- Load a .cube or .xmp, then click [Auto strength · 1–5 RAW].
+- Select 1–5 actual camera RAW files, preferably covering different subjects and lighting.
+- Background analysis finds the strongest blend that stays within conservative tonal/color/clipping thresholds across all references.
+- The strength slider and PF3 export are updated automatically. Open one RAW separately to preview the photo.
+- Initial 50% is provisional, not an analyzed recommendation. A recommendation is not artistic optimization or proof of Canon DPP fidelity.
+- The LUT is assumed to accept display sRGB. Technical Log/gamut LUTs require correct color-space conversion first.
+- RAW analysis requires rawpy. This feature does not fix installation failures on Python versions lacking a rawpy wheel.
+
+CUBE LUT type estimation (new)
+- Opening a .cube analyzes its RGB lookup table, never its filename, TITLE, or comments.
+- Displays Creative / likely Technical / likely Hybrid / Uncertain with confidence.
+- Creative LUTs retain the existing RAW 1–5 photo automatic strength tool.
+- Likely Technical/Hybrid: RAW optimizer is inactive; exports are never blocked and no warning dialog appears.
+- Override a mistaken estimate to Creative to use RAW automatic strength. Uncertain LUTs remain opt-in.
+- Log/gamut color-space conversion is NOT performed; the LUT table cannot prove intended input color space.
+
+
+PF3 Converter v1.1 — LUMIX CUBE export
+-------------------------------------
+1. Open a CUBE or XMP file.
+2. Optionally use RAW 1–5 photo auto strength or choose a manual strength.
+3. Choose the LUMIX base Photo Style (STD by default). It must match camera rendering.
+4. Choose [5. Export LUMIX CUBE (sRGB)].
+5. Import via a supported LUMIX LUT Library; take test JPEGs on the camera.
+Standard XMP → CUBE: use [Save standard CUBE (incl. XMP)]; both CUBE outputs use the same selected strength.
+Warning: Adobe develop presets are approximated; AI masks, camera profiles,
+and RAW rendering are not reproduced. Tags do NOT convert input color spaces.
+Log-oriented LUTs must be correctly transformed before camera use.
+
+
+
+[v1.1 sRGB] Standard CUBE targets Photoshop sRGB documents; LUMIX CUBE targets Panasonic cameras. At equal strengths, both exports use identical 33³ RGB values. Only LUMIX adds the Photo Style tag. Lightroom develop preset conversions remain approximate.

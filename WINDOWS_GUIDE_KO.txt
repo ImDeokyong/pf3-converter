@@ -1,0 +1,67 @@
+PF3 Converter v1.1 사용 방법
+제작자 : ImDeokyong
+
+지원 언어: 한국어 / English / 日本語 / 简体中文
+프로그램 오른쪽 상단 언어 선택 메뉴에서 즉시 전환할 수 있습니다.
+선택한 언어는 다음 실행에도 유지됩니다.
+
+1. Windows 64비트 Python 3.10 이상과 Canon Picture Style Editor(PSE)를 설치합니다.
+2. 압축을 모두 풀고 launch_windows.bat을 실행합니다.
+3. [1. .cube / .xmp 불러오기]에서 .cube 또는 Lightroom/Camera Raw .xmp를 선택합니다.
+4. 사진/RAW 미리보기를 열고 색감과 전체 해상도를 확인합니다.
+5. PF3 변환은 기준 스타일·변환 강도를 설정한 다음 [3. 실제 .pf3 파일 생성]을 선택합니다.
+6. CUBE → Adobe XMP는 [4. .cube → Lightroom .xmp 생성]을 선택합니다.
+7. 생성된 PF3는 Canon DPP에서, XMP는 Lightroom/Camera Raw에서 직접 확인합니다.
+
+주의 사항
+- PF3 생성에는 Windows와 Canon PSE 설치본의 EdsCFParse.dll이 필요합니다.
+- CUBE→XMP에는 Canon PSE가 필요하지 않습니다.
+- Adobe XMP 컬러 프로파일은 내부 3D RGB LUT를 추출합니다.
+- Lightroom 보정 프리셋은 노출/대비/커브/HSL 등 지원 항목을 근사 변환하며
+  원본 Lightroom과 완전히 같지 않습니다. 제외된 보정은 경고창에 나타납니다.
+- 카메라 실물에서의 PF3 적용, Lightroom 실제 XMP 가져오기는 별도 검증해야 합니다.
+- 전체 소스는 MIT 라이선스이며 캐논·어도비 소프트웨어를 포함하지 않습니다.
+
+Windows 실행 파일 제작
+- build_windows.bat 실행 시 dist\PF3Converter.exe 생성 (PyInstaller 필요).
+- EXE 파일 속성의 제품명은 PF3 Converter, 버전은 1.1, 제작자 표기는 ImDeokyong입니다.
+- 배포 ZIP은 전체 소스와 빌드 스크립트이며 EXE 자체는 포함하지 않습니다.
+
+명령줄 예시
+python cli.py look.cube -o look.pf3
+python cli.py preset.xmp -o result.pf3
+python cli.py look.cube -o LightroomLook.xmp --name "My Profile"
+
+RAW 1~5장 자동 추천 (신규 기능)
+- .cube 또는 .xmp를 불러온 뒤 [RAW 1~5장 자동 추천]을 클릭합니다.
+- 실제 카메라 RAW 파일 1~5장을 선택합니다. 다양한 조명·피사체를 섞으면 일반적인 사진에 적용하기 좋습니다.
+- 분석은 별도 스레드에서 수행되며, 과도한 명암/색상 변화와 새 하이라이트·섀도 손실을 제한하는 가장 높은 강도를 찾습니다.
+- 결과가 변환 강도 슬라이더와 PF3 내보내기에 자동 적용됩니다. 사진 미리보기는 별도로 RAW 사진을 불러오세요.
+- 시작 강도 50%는 임시값이며 자동 분석 결과가 아닙니다. 추천 강도는 미적 정답이나 Canon DPP 실기 검증을 뜻하지 않습니다.
+- 원본 LUT는 표시용 sRGB를 가정합니다. Log/색역 변환용 영상 LUT는 입력 색 공간을 먼저 올바르게 처리해야 합니다.
+- RAW 분석에는 rawpy가 필요하며, Python 3.15 설치 호환성 문제는 이 기능에서 해결되지 않습니다.
+
+CUBE LUT 유형 자동 분석 (신규 기능)
+- .cube 파일을 열면 파일명/주석이 아닌 내부 RGB 변환 테이블을 분석합니다.
+- Creative / Technical 추정 / Hybrid 추정 / 미확정과 신뢰도를 표시합니다.
+- Creative 유형은 기존 RAW 1~5장 자동 강도 추천을 그대로 사용합니다.
+- Technical/Hybrid 추정 시 RAW 자동 추천 버튼은 비활성화됩니다. PF3/XMP 변환 자체는 차단하지 않으며 경고창도 띄우지 않습니다.
+- 판별이 잘못되었다면 옆의 사용자 지정 메뉴에서 Creative를 선택하여 RAW 추천을 사용할 수 있습니다.
+- 미확정 유형은 사용자가 선택하여 RAW 추천을 사용할 수 있습니다.
+- 색 공간/Log 변환은 자동으로 수행되지 않으며, RGB 테이블만으로 정확한 입력 색 공간을 확정할 수 없습니다.
+
+
+PF3 Converter v1.1 — LUMIX CUBE 내보내기
+-------------------------------------
+1. CUBE 또는 XMP 파일을 불러옵니다.
+2. 필요하면 RAW 1~5장 자동 강도 추천을 실행하거나 강도를 직접 설정합니다.
+3. LUMIX 기준 Photo Style을 선택합니다(기본값 STD). 카메라에서 실제 사용한 Photo Style과 일치해야 합니다.
+4. [5. LUMIX CUBE 출력 (sRGB)]을 눌러 저장합니다.
+5. 지원 LUMIX의 LUT 라이브러리에 CUBE를 등록한 뒤 실제 JPEG 촬영으로 확인하세요.
+일반 XMP → CUBE 변환은 [일반 CUBE 저장 (XMP 포함)] 버튼을 사용합니다. 두 CUBE 출력 모두 동일한 강도 설정을 사용합니다.
+주의: Lightroom 현상 프리셋은 근사 변환입니다. AI 마스크/카메라 프로파일/RAW 현상과 완전히 일치하지 않습니다.
+LUMIX 태그만으로 색 공간이 변환되는 것은 아닙니다. LOG용 LUT에는 별도의 올바른 색 공간 처리가 필요합니다.
+
+
+
+[v1.1 sRGB] 일반 CUBE는 Photoshop의 sRGB 문서용이며, LUMIX CUBE는 호환 LUMIX 카메라용입니다. 동일한 강도로 출력하면 두 파일의 33³ RGB 테이블은 같습니다. LUMIX에는 Photo Style 태그가 추가됩니다. Lightroom 현상 프리셋의 색상은 근사 변환입니다.
