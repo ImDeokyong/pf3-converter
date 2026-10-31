@@ -22,6 +22,23 @@ which is loaded with `ctypes.CDLL` instead of `WinDLL`. Nothing from Canon is bu
   `DppCore.bundle` and is experimental on macOS.
 - See `MAC_GUIDE_KO.txt` for a Korean quick start.
 
+## Log LUT → photo LUT (`log_adapt.py`)
+
+Camera Log LUTs such as Fujifilm's official F-Log2/F-Gamut → film simulation
+CUBEs expect a flat Log signal. `--log-input flog2` (or `flog`) prepends
+sRGB → approximate scene linear → F-Gamut (BT.2020 primaries) → F-Log2, so the
+result can be applied to ordinary photos and exported as PF3:
+
+```sh
+python cli.py ClassicChrome.cube --log-input flog2 -o ClassicChrome.pf3
+python cli.py ClassicChrome.cube --log-input flog2 -o ClassicChrome_photo.cube --exposure 0.3
+```
+
+Mid grey stays at 18 %. Highlights above grey are stretched so that photo white
+renders at 0.98 in the Log LUT (automatic, or `--highlight-stops`). A finished
+photo cannot be fully inverted to scene linear, so this is an approximation.
+Fujifilm LUT files are not included; download them from Fujifilm.
+
 ## v1.1 — Consistent sRGB CUBE output (2026-10-30)
 
 **Output destinations are explicit:** Standard CUBE → Photoshop (document in **sRGB**),

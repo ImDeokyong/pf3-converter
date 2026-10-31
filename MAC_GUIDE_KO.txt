@@ -24,3 +24,15 @@ PF3 Converter macOS 빠른 시작
 V1에 넣기
 - 만든 .pf3는 EOS Utility의 "픽처 스타일 파일 등록"으로 사용자 정의 1~3에 넣습니다.
 - 변환은 근사치입니다. 테스트 컷을 찍어 확인한 뒤 강도(strength)를 조절하세요.
+
+후지 공식 LUT(F-Log2) → V1용 pf3
+- 후지필름 LUT 다운로드 페이지에서 F-Log2 / F-Gamut 버전 .cube를 받습니다 (F-Log2C 아님).
+- 이 LUT는 Log 영상용이라 그대로 쓰면 대비·채도가 과합니다. --log-input으로 사진용으로 바꿉니다.
+  .venv/bin/python cli.py ClassicChrome.cube --log-input flog2 -o ClassicChrome_photo.cube
+  .venv/bin/python cli.py ClassicChrome.cube --log-input flog2 -o ClassicChrome.pf3 --base Neutral
+- 옵션
+  --exposure 0.3         전체 밝기 보정(스톱, -3~+3)
+  --highlight-stops 2    하이라이트 늘이는 폭. 비우면 사진의 흰색이 LUT에서 흰색이 되도록 자동 계산
+  --log-output srgb      LUT 출력(감마 2.4)을 sRGB로 다시 맞춤. 어둡게 보이면 기본값(rec709) 유지
+- _photo.cube를 앱에서 열면 샘플 사진에 입혀 미리볼 수 있습니다.
+- 후지 LUT 파일은 후지 이용약관 대상이라 이 저장소에 넣지 않습니다.

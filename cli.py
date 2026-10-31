@@ -9,6 +9,7 @@ from lumix_export import export_lumix_cube, export_srgb_cube, PHOTO_STYLES
 from xmp_bridge import load_xmp, export_xmp
 from app_info import APP_NAME, APP_AUTHOR, display_name, XMP_GROUP
 from pf3_native import STYLE_IDS, export_pf3, find_canon_library
+from log_adapt import LOG_CURVES, adapt_log_lut
 
 
 def main(argv=None):
@@ -24,6 +25,13 @@ def main(argv=None):
     parser.add_argument('--dll', help='Path to installed Canon EdsCFParse.dll')
     parser.add_argument('--xmp-group', default=XMP_GROUP, help='Adobe XMP creative profile group')
     parser.add_argument('--probe', action='store_true', help='Locate Canon engine')
+    parser.add_argument('--log-input', choices=tuple(LOG_CURVES),
+        help='Input CUBE expects Fujifilm F-Log/F-Log2 (F-Gamut); adapt it to ordinary photos first')
+    parser.add_argument('--exposure', type=float, default=0., help='With --log-input: exposure offset in stops')
+    parser.add_argument('--highlight-stops', type=float,
+        help='With --log-input: stops added above grey so photo white reaches LUT white (default: automatic)')
+    parser.add_argument('--log-output', choices=('rec709', 'srgb'), default='rec709',
+        help='With --log-input: keep the LUT BT.709 output as is, or re-encode gamma 2.4 for sRGB')
     args = parser.parse_args(argv)
     try:
         if args.probe:
@@ -39,6 +47,14 @@ def main(argv=None):
             cube=xmp_info.cube
         else:
             raise ValueError('Input must end in .cube or .xmp')
+        adapt_info=None
+        if args.log_input:
+            if xmp_info:raise ValueError('--log-input requires a .cube input')
+            adapted=adapt_log_lut(cube,args.log_input,args.highlight_stops,args.exposure,args.log_output)
+            cube=adapted.cube
+            adapt_info={'curve':adapted.curve,'highlight_stops':adapted.highlight_stops,
+                        'exposure':adapted.exposure,'photo_white_out':round(adapted.white_out,4),
+                        'photo_grey_out':round(adapted.grey_out,4),'output':args.log_output}
         dest=Path(args.output) if args.output else source.with_suffix('.pf3')
         if args.lumix_style and dest.suffix.lower() != '.cube':
             raise ValueError('--lumix-style requires a .cube output')
@@ -64,6 +80,7 @@ def main(argv=None):
                                     'ignored':xmp_info.ignored,'warnings':xmp_info.warnings,
                                     'table_color_space':xmp_info.color_space}
         else:raise ValueError('Output must end in .pf3, .xmp, or .cube')
+        if adapt_info:info['log_adapt']=adapt_info
         print(json.dumps(info,indent=2,ensure_ascii=False))
         return 0
     except Exception as exc:
