@@ -9,8 +9,12 @@ new 33^3 CUBE whose input is display sRGB:
 The photo has already been tone-mapped by its camera, so scene linear can
 only be approximated. Mid grey (18 %) is kept at 0.18 and highlights above it
 in each channel are stretched in log2 space ("highlight stops"). The default of
-1 stop puts photo white about 3.5 stops above grey, close to where camera JPEGs
-clip, so soft-shouldered looks such as ETERNA keep their soft highlights.
+2 stops puts photo white about 4.5 stops above grey.
+A camera JPEG already carries the camera's S-curve, and the Log LUT adds its own,
+so shadows below grey are pulled toward grey ("shadow compress", 0..0.8) to avoid
+stacking contrast. Defaults were tuned on Canon PowerShot V1 photos with the
+official Fujifilm F-Log2 film simulation LUTs: overall brightness and shadow
+level then stay close to the camera JPEG while the colour rendering changes.
 "auto" instead stretches until photo white renders as white in the Log LUT,
 which brightens and washes out saturated colours with the official Fujifilm
 LUTs. This is an approximation and must be checked with test photos. MIT licensed.
@@ -36,7 +40,8 @@ BT709_TO_FGAMUT = np.array([
 GREY = 0.18
 GREY_TO_WHITE = float(np.log2(1 / GREY))  # stops from 18 % grey to photo white
 WHITE_TARGET = 0.98
-DEFAULT_HIGHLIGHT_STOPS = 1.0
+DEFAULT_HIGHLIGHT_STOPS = 2.0
+DEFAULT_SHADOW_COMPRESS = 0.35
 
 
 @dataclass(frozen=True)
@@ -66,7 +71,8 @@ def log_encode(x, curve: str = 'flog2'):
                     k['c'] * np.log10(k['a'] * x + k['b']) + k['d'])
 
 
-def photo_to_scene(rgb, highlight_stops: float = 2.0, exposure: float = 0.0):
+def photo_to_scene(rgb, highlight_stops: float = DEFAULT_HIGHLIGHT_STOPS, exposure: float = 0.0,
+                   shadow_compress: float = DEFAULT_SHADOW_COMPRESS):
     """Display sRGB -> approximate scene-linear BT.709 reflectance.
 
     Each channel is expanded on its own, mirroring the per-channel tone curve a
@@ -79,16 +85,20 @@ def photo_to_scene(rgb, highlight_stops: float = 2.0, exposure: float = 0.0):
     # Smooth expansion above grey: slope 1 at grey, photo white -> +GREY_TO_WHITE+highlight_stops.
     above = np.clip(s, 0, None)
     stretched = s + highlight_stops * (above / GREY_TO_WHITE) ** 2
+    # Undo part of the camera S-curve below grey so contrast is not applied twice.
+    stretched = np.where(stretched < 0, stretched * (1 - shadow_compress), stretched)
     return np.where(linear > 1e-9, GREY * 2 ** stretched, linear) * 2 ** exposure
 
 
-def build_input_transform(rgb, curve='flog2', highlight_stops=2.0, exposure=0.0):
-    scene = photo_to_scene(rgb, highlight_stops, exposure)
+def build_input_transform(rgb, curve='flog2', highlight_stops=DEFAULT_HIGHLIGHT_STOPS, exposure=0.0,
+                          shadow_compress=DEFAULT_SHADOW_COMPRESS):
+    scene = photo_to_scene(rgb, highlight_stops, exposure, shadow_compress)
     return log_encode(scene @ BT709_TO_FGAMUT.T, curve)
 
 
-def _render(log_lut: Cube, rgb, curve, highlight_stops, exposure, output):
-    out = apply_cube(log_lut, build_input_transform(rgb, curve, highlight_stops, exposure).astype(np.float32))
+def _render(log_lut: Cube, rgb, curve, highlight_stops, exposure, output, shadow_compress=DEFAULT_SHADOW_COMPRESS):
+    out = apply_cube(log_lut, build_input_transform(rgb, curve, highlight_stops, exposure,
+                                                    shadow_compress).astype(np.float32))
     out = np.clip(out.astype(np.float64), 0, 1)
     if output == 'srgb':
         # Log LUTs target a BT.1886 (gamma 2.4) display; re-encode for sRGB viewing.
@@ -96,11 +106,12 @@ def _render(log_lut: Cube, rgb, curve, highlight_stops, exposure, output):
     return out
 
 
-def auto_highlight_stops(log_lut: Cube, curve='flog2', exposure=0.0, output='rec709') -> float:
+def auto_highlight_stops(log_lut: Cube, curve='flog2', exposure=0.0, output='rec709',
+                         shadow_compress=DEFAULT_SHADOW_COMPRESS) -> float:
     """Smallest stretch for which photo white renders at WHITE_TARGET (0..6 stops)."""
     white = np.ones((1, 3))
     def level(stops):
-        return float(_render(log_lut, white, curve, stops, exposure, output).mean())
+        return float(_render(log_lut, white, curve, stops, exposure, output, shadow_compress).mean())
     if level(0.0) >= WHITE_TARGET:
         return 0.0
     low, high = 0.0, 6.0
@@ -116,7 +127,8 @@ def auto_highlight_stops(log_lut: Cube, curve='flog2', exposure=0.0, output='rec
 
 
 def adapt_log_lut(log_lut: Cube, curve: str = 'flog2', highlight_stops: float | str = DEFAULT_HIGHLIGHT_STOPS,
-                  exposure: float = 0.0, output: str = 'rec709', size: int = 33) -> AdaptResult:
+                  exposure: float = 0.0, output: str = 'rec709', size: int = 33,
+                  shadow_compress: float = DEFAULT_SHADOW_COMPRESS) -> AdaptResult:
     """Return a photo (display sRGB input) CUBE built from a Log-input LUT."""
     if curve not in LOG_CURVES:
         raise ValueError(f'Unknown Log curve {curve}; choose {", ".join(LOG_CURVES)}')
@@ -124,16 +136,18 @@ def adapt_log_lut(log_lut: Cube, curve: str = 'flog2', highlight_stops: float | 
         raise ValueError('output must be rec709 or srgb')
     if not -3 <= exposure <= 3:
         raise ValueError('exposure must be between -3 and +3 stops')
+    if not 0 <= shadow_compress <= 0.8:
+        raise ValueError('shadow compress must be between 0 and 0.8')
     if highlight_stops == 'auto':
-        highlight_stops = auto_highlight_stops(log_lut, curve, exposure, output)
+        highlight_stops = auto_highlight_stops(log_lut, curve, exposure, output, shadow_compress)
     if not 0 <= highlight_stops <= 6:
         raise ValueError('highlight stops must be between 0 and 6')
     axis = np.linspace(0, 1, size)
     grid = np.stack(np.meshgrid(axis, axis, axis, indexing='ij'), -1)
-    data = _render(log_lut, grid.reshape(-1, 3), curve, highlight_stops, exposure, output)
+    data = _render(log_lut, grid.reshape(-1, 3), curve, highlight_stops, exposure, output, shadow_compress)
     cube = Cube(data.reshape(size, size, size, 3).astype(np.float32), np.zeros(3), np.ones(3),
                 f'{log_lut.title or "Log LUT"} (photo)')
     probe = _render(log_lut, np.array([[1., 1., 1.], [0.4614, 0.4614, 0.4614]]), curve,
-                    highlight_stops, exposure, output)
+                    highlight_stops, exposure, output, shadow_compress)
     return AdaptResult(cube, curve, float(highlight_stops), float(exposure),
                        float(probe[0].mean()), float(probe[1].mean()))

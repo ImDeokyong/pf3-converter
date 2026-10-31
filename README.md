@@ -35,9 +35,11 @@ python cli.py ClassicChrome.cube --log-input flog2 -o ClassicChrome_photo.cube -
 ```
 
 Mid grey stays at 18 %. Highlights above grey are stretched per channel by
-`--highlight-stops` (default 1, i.e. photo white ≈ 3.5 stops above grey, near
-where camera JPEGs clip). `auto` stretches until photo white renders white, which
-washes out saturated colours with soft-shouldered looks such as ETERNA. A finished
+`--highlight-stops` (default 2). `auto` stretches until photo white renders white,
+which can wash out saturated colours. Because a camera JPEG already has an S-curve,
+`--shadow-compress` (default 0.35) pulls shadows toward grey so contrast is not
+applied twice. Defaults were tuned on PowerShot V1 photos with Fujifilm's official
+F-Log2 film simulation LUTs. A finished
 photo cannot be fully inverted to scene linear, so this is an approximation.
 Fujifilm LUT files are not included; download them from Fujifilm.
 

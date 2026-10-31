@@ -32,6 +32,8 @@ class LogCurveTests(unittest.TestCase):
     def test_scene_keeps_grey_and_expands_white(self):
         grey_srgb = float(srgb_encode(0.18))
         scene = photo_to_scene(np.array([[grey_srgb] * 3, [1., 1., 1.]]), highlight_stops=2.0)
+        dark = photo_to_scene(np.array([[0.1] * 3]), 2.0, shadow_compress=0.0)[0, 0]
+        self.assertGreater(photo_to_scene(np.array([[0.1] * 3]), 2.0, shadow_compress=0.4)[0, 0], dark)
         np.testing.assert_allclose(scene[0], 0.18, rtol=1e-6)
         np.testing.assert_allclose(scene[1], 0.18 * 2 ** (np.log2(1 / 0.18) + 2), rtol=1e-6)
 
@@ -53,16 +55,16 @@ class AdaptTests(unittest.TestCase):
         self.assertTrue(0.3 < result.grey_out < 0.75, result.grey_out)
         self.assertEqual(result.cube.size, 33)
 
-    def test_default_keeps_one_stop_highlight_expansion(self):
+    def test_default_highlight_expansion(self):
         result = adapt_log_lut(synthetic_flog2_lut(9), 'flog2')
-        self.assertEqual(result.highlight_stops, 1.0)
+        self.assertEqual(result.highlight_stops, 2.0)
         self.assertLess(result.white_out, adapt_log_lut(synthetic_flog2_lut(9), 'flog2', 'auto').white_out + 1e-6)
 
     def test_plain_application_overdoes_contrast_compared_with_adapted(self):
         log_lut = synthetic_flog2_lut()
         shadow = np.array([[0.1, 0.1, 0.1]], dtype=np.float32)
         naive = float(apply_cube(log_lut, shadow).mean())
-        adapted = float(apply_cube(adapt_log_lut(log_lut, 'flog2').cube, shadow).mean())
+        adapted = float(apply_cube(adapt_log_lut(log_lut, 'flog2', shadow_compress=0.0).cube, shadow).mean())
         # sRGB 0.1 is a real shadow; feeding it as F-Log2 code crushes it toward black.
         self.assertGreater(adapted, naive * 2)
 
@@ -77,6 +79,8 @@ class AdaptTests(unittest.TestCase):
             adapt_log_lut(lut, 'slog3')
         with self.assertRaises(ValueError):
             adapt_log_lut(lut, 'flog2', exposure=5)
+        with self.assertRaises(ValueError):
+            adapt_log_lut(lut, 'flog2', shadow_compress=0.9)
         self.assertEqual(auto_highlight_stops(Cube(np.ones((2, 2, 2, 3), np.float32), np.zeros(3), np.ones(3))), 0.0)
 
 

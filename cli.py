@@ -28,8 +28,10 @@ def main(argv=None):
     parser.add_argument('--log-input', choices=tuple(LOG_CURVES),
         help='Input CUBE expects Fujifilm F-Log/F-Log2 (F-Gamut); adapt it to ordinary photos first')
     parser.add_argument('--exposure', type=float, default=0., help='With --log-input: exposure offset in stops')
-    parser.add_argument('--highlight-stops', default='1',
-        help='With --log-input: extra stops above grey for photo highlights (default 1, or "auto" to make photo white render white)')
+    parser.add_argument('--highlight-stops', default='2',
+        help='With --log-input: extra stops above grey for photo highlights (default 2, or "auto" to make photo white render white)')
+    parser.add_argument('--shadow-compress', type=float, default=0.35,
+        help='With --log-input: 0..0.8, pulls shadows toward grey so camera and LUT contrast do not stack (default 0.35)')
     parser.add_argument('--log-output', choices=('rec709', 'srgb'), default='rec709',
         help='With --log-input: keep the LUT BT.709 output as is, or re-encode gamma 2.4 for sRGB')
     args = parser.parse_args(argv)
@@ -51,10 +53,11 @@ def main(argv=None):
         if args.log_input:
             if xmp_info:raise ValueError('--log-input requires a .cube input')
             stops=args.highlight_stops if args.highlight_stops=='auto' else float(args.highlight_stops)
-            adapted=adapt_log_lut(cube,args.log_input,stops,args.exposure,args.log_output)
+            adapted=adapt_log_lut(cube,args.log_input,stops,args.exposure,args.log_output,
+                                  shadow_compress=args.shadow_compress)
             cube=adapted.cube
             adapt_info={'curve':adapted.curve,'highlight_stops':adapted.highlight_stops,
-                        'exposure':adapted.exposure,'photo_white_out':round(adapted.white_out,4),
+                        'exposure':adapted.exposure,'shadow_compress':args.shadow_compress,'photo_white_out':round(adapted.white_out,4),
                         'photo_grey_out':round(adapted.grey_out,4),'output':args.log_output}
         dest=Path(args.output) if args.output else source.with_suffix('.pf3')
         if args.lumix_style and dest.suffix.lower() != '.cube':
